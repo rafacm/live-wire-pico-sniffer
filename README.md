@@ -40,7 +40,8 @@ The antenna is a single insulated breadboard jumper (solid-core, 22 AWG). One en
 
 ```
 main.py                          # Entry point (runs on boot)
-CLAUDE.md                        # Project instructions for Claude Code
+AGENTS.md                        # Project instructions (conventions, layout, deploy commands)
+CLAUDE.md                        # One-line redirect to AGENTS.md
 lib/
   sh1106.py                      # SH1106 OLED driver (I2C, framebuf-based)
   live_wire_sensor.py            # Windowed peak-to-peak ADC sampler
