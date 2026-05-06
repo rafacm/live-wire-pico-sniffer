@@ -8,7 +8,7 @@ Non-contact AC voltage detector built on a Raspberry Pi Pico 2, an insulated cop
 
 > ⚠️ **Disclaimer.** This is a hobby project, not a certified non-contact voltage tester. Build, **calibrate** and use at your own risk. The author accepts no liability for damage, injury, or loss caused by use or misuse of this project.
 
-> 🎯 **Calibrate before you trust it.** Sensitivity varies dramatically with antenna length, supply, and how you hold the board, so always start each session by sweeping over a spot you *know* is energized (e.g. a powered lamp's cord) and a spot you *know* has no wiring nearby (an open floor, the middle of a wooden door). That tells you what a real "DETECTED" looks like for your current setup — and, just as importantly, what the baseline noise looks like — before you point it at anything that matters.
+> 🎯 **Calibrate before you trust it.** Sensitivity varies with antenna length, supply, and how you hold the board. Start every session by sweeping over a spot you *know* is energized and one you *know* is clear, so you learn what a real `DETECTED` looks like on your setup. Step-by-step procedure: [Calibrating before you trust it](doc/README.md#calibrating-before-you-trust-it).
 
 ## Hardware
 
@@ -17,6 +17,8 @@ Non-contact AC voltage detector built on a Raspberry Pi Pico 2, an insulated cop
 Important points (marked in the image above):
 1. Make sure you connect the power supply to the `VSYS` pin and NOT the `VBUS` pin. This way you can power the Pico both from the micro-USB connection and the power supply board.
 2. Make sure you select the `5V` pins in the power supply board
+
+See the [Raspberry Pi Pico pinout](https://pico.pinout.xyz/) for pinout details.
 
 For best detection sensitivity, prefer **battery power** (e.g. a single 18650 + holder, or 3×AA, into `VSYS` with USB unplugged). A floating supply gives the cleanest baseline; a mains-derived PSU couples 50/60 Hz hum onto ground and shrinks the contrast between "near a wire" and "free air." See [doc/features/live-wire-detection.md](doc/features/live-wire-detection.md) for details.
 
@@ -38,7 +40,30 @@ Devices:
 
 I2C runs at 400 kHz.
 
-See the [Raspberry Pi Pico pinout](https://pico.pinout.xyz/) for pinout details.
+## What the OLED shows
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│ Live Wire                                          1500        │ ← header: label + excursion
+│ ───────────────────────────────────────────────────────────────│
+│                                  ▄▄                            │
+│                                 ▄██▄        ▄▄                 │
+│                              ▄ ▄████▄  ▄▄  ████                │ ← history strip
+│ ▄▄ ▄▄▄ ▄▄  ▄▄ ▄▄▄ ▄▄ ▄  ▄ ▄▄▄█▄██████▄████▄████▄▄▄ ▄  ▄▄ ▄ ▄   │   (oldest left,
+│ ───────────────────────────────────────────────────────────────│    newest right)
+│                                                                │
+│  ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │ ← magnitude bar
+│  ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │   (filled by excursion,
+│  ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░   │    autoscaled to max excursion)
+│ ───────────────────────────────────────────────────────────────│
+│ LOW                MED                                   MAX   │ ← tick labels
+│                                                                │
+│                       ▓▓▓ DETECTED ▓▓▓                         │ ← status slot
+│                                                                │   (alternates "WARMING UP" /
+└────────────────────────────────────────────────────────────────┘   "WAIT" during warm-up)
+```
+
+For the full annotated walkthrough — what each region is driven by, the baseline/excursion split, the warm-up indicator, and the exact rule that fires `DETECTED` — see [doc/README.md](doc/README.md).
 
 ## Project layout
 
@@ -95,33 +120,16 @@ All test files have a `main()` entry point guarded by `if __name__ == "__main__"
 
 ## How the detector works
 
-There is no IC sensor — just a piece of wire on an ADC pin. The principle is **capacitive coupling to the electric field** around an energized conductor:
+There is no IC sensor — just an insulated jumper on an ADC pin. A live mains conductor radiates an electric field at 50/60 Hz that capacitively couples into the antenna; the Pico samples the induced peak-to-peak amplitude, subtracts a slow-EMA baseline to get the "excursion above noise", and lights `DETECTED` when the excursion clears both a relative and an absolute threshold past a warm-up gate.
 
-```
-mains conductor (50/60 Hz E-field)
-        │
-        │  capacitive coupling through air + insulation
-        ▼
-antenna wire ──→ Pico ADC0 (GP26) ──→ windowed peak-to-peak ──→ baseline EMA
-                                              │                        │
-                                              └──── excursion = current - baseline ───┐
-                                                                                      ▼
-                                                            history strip + magnitude bar
-                                                            + DETECTED (when guards pass)
-```
+A coil/solenoid antenna would only respond to the magnetic field — present only when current flows — and would miss energized-but-unloaded wires, exactly the case you don't want to drill into.
 
-A live wire radiates an electric field whether or not current is flowing — that is why this approach detects energized-but-unloaded wires (the ones you don't want to drill into). A coil/solenoid antenna would instead pick up the magnetic field, which only exists when a load draws current; it would also need many turns around a ferrite core to be useful at mains frequency.
+Full walkthrough with pipeline diagram, baseline/excursion math, three-guard detection rule, and tuning notes: **[doc/README.md](doc/README.md)**. Direct links:
 
-**Signal path:**
-
-1. The ADC samples GP26 at ~4 kHz for ~40 ms (≈ 2 cycles at 50 Hz, ~2.4 at 60 Hz).
-2. The sampler returns peak-to-peak amplitude (`max - min`) — the amplitude of the induced 50/60 Hz signal on the antenna.
-3. A slow EMA tracks the local noise floor as `baseline`; the "useful" signal is `excursion = current - baseline`. The bar and history strip render the excursion, autoscaled against `max_excursion` (peak envelope, decayed × 7/8 every 1 s).
-4. `DETECTED` lights only when **all three** guards pass: past the warm-up window, excursion above half of `max_excursion`, and excursion above an absolute minimum count above baseline.
-
-**Why peak-to-peak rather than RMS:** integer arithmetic, one min and one max per sample, no squaring or square-root, comfortably real-time in MicroPython on the Pico 2.
-
-For the full annotated screen layout, the baseline-vs-excursion split, and the exact rule used to fire `DETECTED`, see [doc/README.md](doc/README.md).
+- [Signal pipeline](doc/README.md#signal-pipeline)
+- [Baseline, excursion, max excursion](doc/README.md#baseline-excursion-max-excursion)
+- [Detection rule](doc/README.md#detection-rule)
+- [Tuning](doc/README.md#tuning)
 
 ## Acknowledgements
 
