@@ -6,6 +6,10 @@
 
 Non-contact AC voltage detector built on a Raspberry Pi Pico 2, an insulated copper jumper used as an antenna, and a 128×64 SH1106 OLED display. A short jumper wire on an ADC pin capacitively couples to the electric field around mains conductors, and the OLED shows a scrolling history strip plus a magnitude bar that spikes when the probe passes over a live wire.
 
+> ⚠️ **Disclaimer.** This is a hobby project, not a certified non-contact voltage tester. Build, **calibrate** and use at your own risk. The author accepts no liability for damage, injury, or loss caused by use or misuse of this project.
+
+> 🎯 **Calibrate before you trust it.** Sensitivity varies dramatically with antenna length, supply, and how you hold the board, so always start each session by sweeping over a spot you *know* is energized (e.g. a powered lamp's cord) and a spot you *know* has no wiring nearby (an open floor, the middle of a wooden door). That tells you what a real "DETECTED" looks like for your current setup — and, just as importantly, what the baseline noise looks like — before you point it at anything that matters.
+
 ## Hardware
 
 ![Raspberry Pi Pico 2, an insulated copper jumper used as an antenna, and a 128×64 SH1106 OLED display](doc/images/live-wire-pico-sniffer-foto-1.jpg)
