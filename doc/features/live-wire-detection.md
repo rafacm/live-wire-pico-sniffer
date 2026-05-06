@@ -36,9 +36,9 @@ mains conductor ─ E-field ─▶ antenna jumper ─▶ ADC0 (GP26)
 | Baseline warm-up | 30 samples | `_WARMUP_SAMPLES` | Enough samples (~3 s at the current draw cadence) for the rolling-average baseline to settle on the local noise floor before detection is allowed to fire. |
 | Baseline EMA | 1/64 per sample | `_BASELINE_ALPHA_DEN` | Slow enough that a brief wire-pass cannot pull the noise floor up; fast enough to follow real environmental drift over tens of seconds. Baseline only updates when the reading is "calm" (excursion below the relative threshold or below the absolute minimum). |
 | Excursion floor | 50 | `_EXCURSION_FLOOR` | Lower bound for the autoscale envelope; prevents the bar from looking 100 % full when the room is dead-quiet and `max_excursion` would otherwise decay toward zero. |
-| Excursion decay | × 31/32 every 2 s | `_EXCURSION_DECAY_*` | Lets the bar adapt back down after a strong reading so subsequent passes register clearly. |
+| Excursion decay | × 7/8 every 1 s | `_EXCURSION_DECAY_*` | ~7 s time constant. Slow enough that the bar stays calibrated through a single sweep, fast enough that a one-off strong reading doesn't suppress detection on the next pass for a minute. |
 | Detection ratio | excursion > max_excursion / 2 | `_DETECT_RATIO_*` | Relative threshold avoids needing per-environment calibration; forgiving enough that the label stays on through a full sweep over a wire. |
-| Detection minimum | 100 counts above baseline | `_DETECT_MIN_EXCURSION` | Absolute floor under the relative threshold — guarantees a noisy baseline alone can never light DETECTED, even if `max_excursion` has decayed close to its floor. |
+| Detection minimum | 30 counts above baseline | `_DETECT_MIN_EXCURSION` | Absolute floor under the relative threshold. Set to be comfortably above ADC noise (~10–15 counts of free-air variation) but small enough that real wire passes at battery/MB102 sensitivity reliably trip it. Was 100 originally, which turned out to be too high for low-signal environments — peaks visible in the history strip would not fire DETECTED. |
 
 ## Powering the Pico
 
