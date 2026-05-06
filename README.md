@@ -20,7 +20,9 @@ Important points (marked in the image above):
 
 For best detection sensitivity, prefer **battery power** (e.g. a single 18650 + holder, or 3×AA, into `VSYS` with USB unplugged). A floating supply gives the cleanest baseline; a mains-derived PSU couples 50/60 Hz hum onto ground and shrinks the contrast between "near a wire" and "free air." See [doc/features/live-wire-detection.md](doc/features/live-wire-detection.md) for details.
 
-See the [Raspberry Pi Pico pinout](https://pico.pinout.xyz/) for details.
+The antenna is a single insulated breadboard jumper (solid-core, 22 AWG). One end goes into the ADC pin; the other end is the probe tip. Stripping ~1–2 cm of insulation off the tip slightly increases sensitivity but is optional — the plastic jacket does not block capacitive coupling.
+
+Wire the antenna and OLED to the Pico as follows:
 
 | Signal           | Pin  | Device                       |
 |------------------|------|------------------------------|
@@ -28,13 +30,15 @@ See the [Raspberry Pi Pico pinout](https://pico.pinout.xyz/) for details.
 | I2C0 SDA         | GP12 | SH1106                       |
 | I2C0 SCL         | GP13 | SH1106                       |
 
+Devices: 
+
 | Device | Bus  | I2C Address | Notes |
 |--------|------|-------------|-------|
 | SH1106 | I2C0 | 0x3C        | 128×64 OLED display |
 
 I2C runs at 400 kHz.
 
-The antenna is a single insulated breadboard jumper (solid-core, 22 AWG). One end goes into the ADC pin; the other end is the probe tip. Stripping ~1–2 cm of insulation off the tip slightly increases sensitivity but is optional — the plastic jacket does not block capacitive coupling.
+See the [Raspberry Pi Pico pinout](https://pico.pinout.xyz/) for pinout details.
 
 ## Project layout
 
