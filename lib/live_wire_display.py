@@ -52,15 +52,15 @@ _WARMUP_SAMPLES      = 30                # snap baseline to a rolling average fo
 _BASELINE_ALPHA_DEN  = 64                # post-warm-up EMA: baseline += (current - baseline) // 64
 
 # Display autoscale (max excursion envelope)
-_EXCURSION_DECAY_INTERVAL = 2000         # ms between decay steps
-_EXCURSION_DECAY_NUM = 31                # decay factor: max_excursion *= 31/32
-_EXCURSION_DECAY_DEN = 32
+_EXCURSION_DECAY_INTERVAL = 1000         # ms between decay steps
+_EXCURSION_DECAY_NUM = 7                 # decay factor: max_excursion *= 7/8 every step
+_EXCURSION_DECAY_DEN = 8                 # ⇒ ~7 s time constant
 _EXCURSION_FLOOR     = 50                # never let autoscale collapse below this
 
 # DETECTED firing rule
 _DETECT_RATIO_NUM    = 1                 # excursion must exceed max_excursion * 1/2
 _DETECT_RATIO_DEN    = 2
-_DETECT_MIN_EXCURSION = 100              # ...AND exceed this absolute minimum (counts above baseline)
+_DETECT_MIN_EXCURSION = 30               # ...AND exceed this absolute minimum (counts above baseline)
 
 # Warm-up indicator
 _WARMUP_BLINK_MS     = 500               # alternate "WARMING UP" / "WAIT" every 500 ms
