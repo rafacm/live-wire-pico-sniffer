@@ -33,9 +33,12 @@ mains conductor ─ E-field ─▶ antenna jumper ─▶ ADC0 (GP26)
 | Sample rate | 4 kHz | `live_wire_sensor.py` `sample_rate_hz` | Generous oversampling of 50/60 Hz; fits comfortably in pure-Python sampling loop. |
 | Window length | 40 ms | `live_wire_sensor.py` `window_ms` | Captures 2 full cycles at 50 Hz, ≈ 2.4 at 60 Hz — enough to reliably observe peak and trough. |
 | Display refresh | ~12 Hz | `live_wire_display.py` `_DRAW_INTERVAL_MS = 80` | Fast enough to feel responsive while sweeping; slow enough that SH1106 I2C doesn't bottleneck the loop. |
-| Auto-scale floor | 200 | `_MAX_FLOOR` | Prevents the running-max auto-scale from collapsing toward zero during long stretches in free air, which would cause noise to look like a detection. |
-| Auto-scale decay | × 31/32 every 2 s | `_MAX_DECAY_*` | Lets the bar adapt back down after a strong reading so subsequent passes register clearly. |
-| Detection threshold | current > max_seen / 2 | `_DETECT_RATIO_*` | Relative threshold avoids needing per-environment calibration; the ratio is forgiving enough that the label stays on through a full sweep over a wire. |
+| Baseline warm-up | 30 samples | `_WARMUP_SAMPLES` | Enough samples (~3 s at the current draw cadence) for the rolling-average baseline to settle on the local noise floor before detection is allowed to fire. |
+| Baseline EMA | 1/64 per sample | `_BASELINE_ALPHA_DEN` | Slow enough that a brief wire-pass cannot pull the noise floor up; fast enough to follow real environmental drift over tens of seconds. Baseline only updates when the reading is "calm" (excursion below the relative threshold or below the absolute minimum). |
+| Excursion floor | 50 | `_EXCURSION_FLOOR` | Lower bound for the autoscale envelope; prevents the bar from looking 100 % full when the room is dead-quiet and `max_excursion` would otherwise decay toward zero. |
+| Excursion decay | × 31/32 every 2 s | `_EXCURSION_DECAY_*` | Lets the bar adapt back down after a strong reading so subsequent passes register clearly. |
+| Detection ratio | excursion > max_excursion / 2 | `_DETECT_RATIO_*` | Relative threshold avoids needing per-environment calibration; forgiving enough that the label stays on through a full sweep over a wire. |
+| Detection minimum | 100 counts above baseline | `_DETECT_MIN_EXCURSION` | Absolute floor under the relative threshold — guarantees a noisy baseline alone can never light DETECTED, even if `max_excursion` has decayed close to its floor. |
 
 ## Powering the Pico
 

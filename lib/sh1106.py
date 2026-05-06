@@ -59,7 +59,8 @@ class SH1106:
         self.addr = addr
         self.width = width
         self.height = height
-        self.rotate = rotate
+        # Use a private name so we don't shadow the `rotate()` method below.
+        self._rotation = rotate
         self.pages = height // 8
         self.external_vcc = False
 
@@ -88,8 +89,8 @@ class SH1106:
             self.CMD_CHARGE_PUMP, 0x10 if self.external_vcc else 0x14,
             self.CMD_MEMORY_MODE, 0x00,
             # Segment remap and COM scan direction for rotation
-            self.CMD_SEG_REMAP | (0x01 if self.rotate == 0 else 0x00),
-            self.CMD_COM_SCAN_DEC if self.rotate == 0 else self.CMD_COM_SCAN_INC,
+            self.CMD_SEG_REMAP | (0x01 if self._rotation == 0 else 0x00),
+            self.CMD_COM_SCAN_DEC if self._rotation == 0 else self.CMD_COM_SCAN_INC,
             self.CMD_SET_COM_PINS, 0x12 if self.height == 64 else 0x02,
             self.CMD_SET_CONTRAST, 0xCF if not self.external_vcc else 0x9F,
             self.CMD_SET_PRECHARGE, 0x22 if self.external_vcc else 0xF1,
