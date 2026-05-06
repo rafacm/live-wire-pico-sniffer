@@ -17,12 +17,24 @@ mains conductor ─ E-field ─▶ antenna jumper ─▶ ADC0 (GP26)
                                                     │
                                        windowed peak-to-peak (40 ms)
                                                     │
-                                ┌───────────────────┴────────────────────┐
-                                ▼                                        ▼
-                  scrolling history strip                       horizontal magnitude bar
-                                                                         │
-                                                                         ▼
-                                                       "DETECTED" if current > max_seen / 2
+                                                    ▼
+                                             raw current (counts)
+                                                    │
+                              ┌─────────────────────┴─────────────────────┐
+                              ▼                                           ▼
+                       baseline (slow EMA,                          max_excursion
+                       updates only when calm)                      (peak envelope, decays × 7/8 every 1 s)
+                              ▼                                           ▼
+                              └────── excursion = current - baseline (clamped ≥ 0) ──┐
+                                                                                     │
+                                ┌────────────────────────────────────────────────────┤
+                                ▼                                                    ▼
+                  scrolling history strip                                   horizontal magnitude bar
+                                                                                     │
+                                                                                     ▼
+                                                       "DETECTED" iff:  sample_count > _WARMUP_SAMPLES
+                                                                  AND  excursion > max_excursion / 2
+                                                                  AND  excursion > _DETECT_MIN_EXCURSION
 ```
 
 ## Key parameters
