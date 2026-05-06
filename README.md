@@ -56,6 +56,7 @@ test/
   live_wire_display_test.py      # Renders a static demo screen for photographing the OLED
 doc/
   features/                      # Per-feature documentation (one Markdown file per feature)
+  images/                        # Photos and diagrams referenced from this README
 ```
 
 ## Deploying to the board

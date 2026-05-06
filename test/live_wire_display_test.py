@@ -72,10 +72,15 @@ def main():
 
     _populate_history(detector)
 
-    # current / max_seen = 0.75 → bar three-quarters full, above the
-    # 0.5 detection threshold, so the DETECTED box is visible.
-    detector._current  = 1500
-    detector._max_seen = 2000
+    # excursion / max_excursion = 0.75 → bar three-quarters full, above
+    # the 0.5 detection threshold and well past the absolute minimum,
+    # so the DETECTED box is visible. Sample count is set past the
+    # warm-up so the detection guards pass.
+    detector._baseline      = 200
+    detector._current       = 1700
+    detector._excursion     = 1500
+    detector._max_excursion = 2000
+    detector._sample_count  = 100
 
     detector._draw()
 
