@@ -9,7 +9,9 @@ Layout (Option C — history strip + bar):
     y=31      horizontal separator
     y=33..41  Horizontal magnitude bar (rect outline + fill)
     y=44..51  Tick labels: "LOW   MED   MAX"
-    y=54..61  "DETECTED" (only when excursion clearly exceeds noise floor)
+    y=54..61  Status slot: alternating "WARMING UP" / "WAIT" while the
+              baseline is bootstrapping; "DETECTED" once warm-up has
+              passed and the excursion clearly exceeds the noise floor.
 
 Detection vs. display autoscale are deliberately decoupled:
 
@@ -59,6 +61,9 @@ _EXCURSION_FLOOR     = 50                # never let autoscale collapse below th
 _DETECT_RATIO_NUM    = 1                 # excursion must exceed max_excursion * 1/2
 _DETECT_RATIO_DEN    = 2
 _DETECT_MIN_EXCURSION = 100              # ...AND exceed this absolute minimum (counts above baseline)
+
+# Warm-up indicator
+_WARMUP_BLINK_MS     = 500               # alternate "WARMING UP" / "WAIT" every 500 ms
 
 
 class LiveWireDisplay:
@@ -179,21 +184,35 @@ class LiveWireDisplay:
         d.text("MED", (_DISP_W - 24) // 2, _TICKS_Y)
         d.text("MAX", _DISP_W - 24,        _TICKS_Y)
 
-        # DETECTED — black text on filled white box.
-        # Three guards: past warm-up, excursion above relative threshold,
-        # excursion above absolute minimum. All three must hold so a noisy
-        # baseline can never trip the label without a real signal above it.
-        threshold = (self._max_excursion * _DETECT_RATIO_NUM) // _DETECT_RATIO_DEN
-        if (self._sample_count > _WARMUP_SAMPLES
-                and self._excursion > threshold
-                and self._excursion > _DETECT_MIN_EXCURSION):
-            label = "DETECTED"
-            pad   = 2
-            box_w = 8 * len(label) + 2 * pad
-            box_h = 8 + 2 * pad
-            box_x = (_DISP_W - box_w) // 2
-            box_y = _DETECTED_Y - pad
-            d.fill_rect(box_x, box_y, box_w, box_h, 1)
-            d.text(label, box_x + pad, _DETECTED_Y, 0)
+        # Status slot — black text on a filled white box.
+        # During warm-up: alternates "WARMING UP" / "WAIT" so the user can
+        # see the device is booting and readings aren't trustworthy yet.
+        # After warm-up: shows "DETECTED" only when both remaining guards
+        # pass (excursion above relative threshold AND above absolute
+        # minimum), so a noisy baseline alone can never trip the label.
+        status_label = None
+        status_box_w = None
+        if self._sample_count <= _WARMUP_SAMPLES:
+            status_label = ("WARMING UP"
+                            if (ticks_ms() // _WARMUP_BLINK_MS) % 2 == 0
+                            else "WAIT")
+            # Pin box width to the longer label so it doesn't twitch.
+            status_box_w = 8 * len("WARMING UP") + 2 * 2
+        else:
+            threshold = (self._max_excursion * _DETECT_RATIO_NUM) // _DETECT_RATIO_DEN
+            if (self._excursion > threshold
+                    and self._excursion > _DETECT_MIN_EXCURSION):
+                status_label = "DETECTED"
+
+        if status_label is not None:
+            pad = 2
+            if status_box_w is None:
+                status_box_w = 8 * len(status_label) + 2 * pad
+            box_h  = 8 + 2 * pad
+            box_x  = (_DISP_W - status_box_w) // 2
+            box_y  = _DETECTED_Y - pad
+            text_x = box_x + (status_box_w - 8 * len(status_label)) // 2
+            d.fill_rect(box_x, box_y, status_box_w, box_h, 1)
+            d.text(status_label, text_x, _DETECTED_Y, 0)
 
         d.show()
