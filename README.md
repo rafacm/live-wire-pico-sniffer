@@ -102,10 +102,12 @@ mains conductor (50/60 Hz E-field)
         │
         │  capacitive coupling through air + insulation
         ▼
-antenna wire ──→ Pico ADC0 (GP26) ──→ windowed peak-to-peak
-                                              │
-                                              ▼
-                                  history strip + magnitude bar (SH1106)
+antenna wire ──→ Pico ADC0 (GP26) ──→ windowed peak-to-peak ──→ baseline EMA
+                                              │                        │
+                                              └──── excursion = current - baseline ───┐
+                                                                                      ▼
+                                                            history strip + magnitude bar
+                                                            + DETECTED (when guards pass)
 ```
 
 A live wire radiates an electric field whether or not current is flowing — that is why this approach detects energized-but-unloaded wires (the ones you don't want to drill into). A coil/solenoid antenna would instead pick up the magnetic field, which only exists when a load draws current; it would also need many turns around a ferrite core to be useful at mains frequency.
@@ -114,8 +116,8 @@ A live wire radiates an electric field whether or not current is flowing — tha
 
 1. The ADC samples GP26 at ~4 kHz for ~40 ms (≈ 2 cycles at 50 Hz, ~2.4 at 60 Hz).
 2. The sampler returns peak-to-peak amplitude (`max - min`) — the amplitude of the induced 50/60 Hz signal on the antenna.
-3. The display module auto-scales against a slowly-decaying running max, so the bar and history strip stay useful regardless of absolute signal level.
-4. When the current reading exceeds half of the running max, the OLED shows `DETECTED`.
+3. A slow EMA tracks the local noise floor as `baseline`; the "useful" signal is `excursion = current - baseline`. The bar and history strip render the excursion, autoscaled against `max_excursion` (peak envelope, decayed × 7/8 every 1 s).
+4. `DETECTED` lights only when **all three** guards pass: past the warm-up window, excursion above half of `max_excursion`, and excursion above an absolute minimum count above baseline.
 
 **Why peak-to-peak rather than RMS:** integer arithmetic, one min and one max per sample, no squaring or square-root, comfortably real-time in MicroPython on the Pico 2.
 
