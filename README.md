@@ -55,6 +55,7 @@ test/
   live_wire_sensor_test.py       # Prints peak-to-peak readings over serial
   live_wire_display_test.py      # Renders a static demo screen for photographing the OLED
 doc/
+  README.md                      # How detection works (annotated screen + signal pipeline)
   features/                      # Per-feature documentation (one Markdown file per feature)
   images/                        # Photos and diagrams referenced from this README
 ```
@@ -117,6 +118,8 @@ A live wire radiates an electric field whether or not current is flowing — tha
 4. When the current reading exceeds half of the running max, the OLED shows `DETECTED`.
 
 **Why peak-to-peak rather than RMS:** integer arithmetic, one min and one max per sample, no squaring or square-root, comfortably real-time in MicroPython on the Pico 2.
+
+For the full annotated screen layout, the baseline-vs-excursion split, and the exact rule used to fire `DETECTED`, see [doc/README.md](doc/README.md).
 
 ## Acknowledgements
 
